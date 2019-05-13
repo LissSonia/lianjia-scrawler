@@ -4,7 +4,7 @@ import model
 import misc
 import time
 import datetime
-import urllib2
+import urllib
 import logging
 
 logging.basicConfig(
@@ -97,7 +97,7 @@ def GetRentByRegionlist(city, regionlist=[u'xicheng']):
 def get_house_percommunity(city, communityname):
     baseUrl = u"http://%s.lianjia.com/" % (city)
     url = baseUrl + u"ershoufang/rs" + \
-        urllib2.quote(communityname.encode('utf8')) + "/"
+        urllib.parse.quote(communityname.encode('utf8')) + "/"
     source_code = misc.get_source_code(url)
     soup = BeautifulSoup(source_code, 'lxml')
 
@@ -113,7 +113,7 @@ def get_house_percommunity(city, communityname):
         if page > 0:
             url_page = baseUrl + \
                 u"ershoufang/pg%drs%s/" % (page,
-                                           urllib2.quote(communityname.encode('utf8')))
+                                           urllib.parse.quote(communityname.encode('utf8')))
             source_code = misc.get_source_code(url_page)
             soup = BeautifulSoup(source_code, 'lxml')
 
@@ -197,7 +197,7 @@ def get_sell_percommunity(city, communityname):
         if page > 0:
             url_page = baseUrl + \
                 u"chengjiao/pg%drs%s/" % (page,
-                                          urllib2.quote(communityname.encode('utf8')))
+                                          urllib.parse.quote(communityname.encode('utf8')))
             source_code = misc.get_source_code(url_page)
             soup = BeautifulSoup(source_code, 'lxml')
 
@@ -361,7 +361,7 @@ def get_rent_percommunity(city, communityname):
         if page > 0:
             url_page = baseUrl + \
                 u"rent/pg%drs%s/" % (page,
-                                     urllib2.quote(communityname.encode('utf8')))
+                                     urllib.parse.quote(communityname.encode('utf8')))
             source_code = misc.get_source_code(url_page)
             soup = BeautifulSoup(source_code, 'lxml')
         i = 0
@@ -535,58 +535,68 @@ def get_rent_perregion(city, district):
         i = 0
         log_progress("GetRentByRegionlist", district, page + 1, total_pages)
         data_source = []
-        for ultag in soup.findAll("ul", {"class": "house-lst"}):
-            for name in ultag.find_all('li'):
+        for ultag in soup.findAll("div", {"class": "content__list--item"}):
+            for name in ultag.find_all('div',{"class": "content__list--item--main"}):
                 i = i + 1
                 info_dict = {}
                 try:
-                    housetitle = name.find("div", {"class": "info-panel"})
+                    housetitle = name.find("p", {"class": "content__list--item--title twoline"})
                     info_dict.update(
-                        {u'title': housetitle.h2.a.get_text().strip()})
+                        {u'title': housetitle.a.get_text().strip()})
                     info_dict.update({u'link': housetitle.a.get("href")})
-                    houseID = name.get("data-housecode")
-                    info_dict.update({u'houseID': houseID})
+                    # houseID = name.get("data-housecode")
+                    # info_dict.update({u'houseID': houseID})
 
-                    region = name.find("span", {"class": "region"})
-                    info_dict.update({u'region': region.get_text().strip()})
+                    regionDes = name.find("p", {"class": "content__list--item--des"}).get_text().split("/")
 
-                    zone = name.find("span", {"class": "zone"})
-                    info_dict.update({u'zone': zone.get_text().strip()})
+                    region = regionDes[0].strip()
+                    info_dict.update({u'region': region})
 
-                    meters = name.find("span", {"class": "meters"})
-                    info_dict.update({u'meters': meters.get_text().strip()})
+                    zone = regionDes[0].strip()
+                    info_dict.update({u'zone': zone})
 
-                    other = name.find("div", {"class": "con"})
+                    meters = regionDes[1].strip()
+                    info_dict.update({u'meters': meters})
+
+                    other = ""
+                    del(regionDes[0])
+                    del(regionDes[0])
+                    for item in regionDes:
+                        other += item.strip()
+
                     info_dict.update({u'other': other.get_text().strip()})
 
-                    subway = name.find("span", {"class": "fang-subway-ex"})
+                    subway = name.find("i", {"class": "content__item__tag--is_subway_house"})
                     if subway == None:
                         info_dict.update({u'subway': ""})
                     else:
                         info_dict.update(
-                            {u'subway': subway.span.get_text().strip()})
+                            {u'subway': subway.get_text().strip()})
 
-                    decoration = name.find("span", {"class": "decoration-ex"})
-                    if decoration == None:
-                        info_dict.update({u'decoration': ""})
-                    else:
-                        info_dict.update(
-                            {u'decoration': decoration.span.get_text().strip()})
+                    # decoration = name.find("span", {"class": "decoration-ex"})
+                    # if decoration == None:
+                    #     info_dict.update({u'decoration': ""})
+                    # else:
+                    #     info_dict.update(
+                    #         {u'decoration': decoration.span.get_text().strip()})
 
-                    heating = name.find("span", {"class": "heating-ex"})
-                    if decoration == None:
+                    heating = name.find("i", {"class": "content__item__tag--central_heating"})
+                    if heating == None:
                         info_dict.update({u'heating': ""})
                     else:
                         info_dict.update(
-                            {u'heating': heating.span.get_text().strip()})
+                            {u'heating': heating.get_text().strip()})
 
-                    price = name.find("div", {"class": "price"})
+                    price = name.find("span", {"class": "content__list--item-price"})
                     info_dict.update(
-                        {u'price': int(price.span.get_text().strip())})
+                        {u'price': int(price.get_text().strip())})
 
-                    pricepre = name.find("div", {"class": "price-pre"})
-                    info_dict.update(
-                        {u'pricepre': pricepre.get_text().strip()})
+                    publish_time = name.find("p",{"class":"content__list--item--time oneline"})
+                    info_dict.update({u'publish_time':publish_time.get_text().strip()})
+
+                    # pricepre = name.find("div", {"class": "price-pre"})
+                    # info_dict.update(
+                    #     {u'pricepre': pricepre.get_text().strip()})
 
                 except:
                     continue
