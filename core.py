@@ -68,7 +68,7 @@ def GetCommunityByRegionlist(city, regionlist=[u'xicheng']):
     logging.info("Run time: " + str(endtime - starttime))
 
 
-def GetHouseByRegionlist(city, regionlist=[u'xicheng']):
+def GetHouseByRegionlist(city, regionlist=[u'haidian']):
     starttime = datetime.datetime.now()
     for regionname in regionlist:
         logging.info("Get Onsale House Infomation in %s" % regionname)
@@ -81,7 +81,7 @@ def GetHouseByRegionlist(city, regionlist=[u'xicheng']):
     logging.info("Run time: " + str(endtime - starttime))
 
 
-def GetRentByRegionlist(city, regionlist=[u'xicheng']):
+def GetRentByRegionlist(city, regionlist=[u'haidian']):
     starttime = datetime.datetime.now()
     for regionname in regionlist:
         logging.info("Get Rent House Infomation in %s" % regionname)
@@ -508,10 +508,10 @@ def get_house_perregion(city, district):
 
         with model.database.atomic():
             if data_source:
-                model.Houseinfo.insert_many(data_source).upsert().execute()
+                model.Houseinfo.insert_many(data_source).execute()
             if hisprice_data_source:
                 model.Hisprice.insert_many(
-                    hisprice_data_source).upsert().execute()
+                    hisprice_data_source).execute()
         time.sleep(1)
 
 
@@ -543,7 +543,7 @@ def get_rent_perregion(city, district):
                     housetitle = name.find("p", {"class": "content__list--item--title twoline"})
                     info_dict.update(
                         {u'title': housetitle.a.get_text().strip()})
-                    info_dict.update({u'link': housetitle.a.get("href")})
+                    info_dict.update({u'link': baseUrl + (housetitle.a.get("href"))})
                     # houseID = name.get("data-housecode")
                     # info_dict.update({u'houseID': houseID})
 
@@ -564,7 +564,7 @@ def get_rent_perregion(city, district):
                     for item in regionDes:
                         other += item.strip()
 
-                    info_dict.update({u'other': other.get_text().strip()})
+                    info_dict.update({u'other': other.strip()})
 
                     subway = name.find("i", {"class": "content__item__tag--is_subway_house"})
                     if subway == None:
@@ -589,10 +589,10 @@ def get_rent_perregion(city, district):
 
                     price = name.find("span", {"class": "content__list--item-price"})
                     info_dict.update(
-                        {u'price': int(price.get_text().strip())})
+                        {u'price': int(price.em.get_text().strip())})
 
-                    publish_time = name.find("p",{"class":"content__list--item--time oneline"})
-                    info_dict.update({u'publish_time':publish_time.get_text().strip()})
+                    # publish_time = name.find("p",{"class":"content__list--item--time oneline"})
+                    # info_dict.update({u'publishTime':publish_time.get_text().strip()})
 
                     # pricepre = name.find("div", {"class": "price-pre"})
                     # info_dict.update(
@@ -600,13 +600,14 @@ def get_rent_perregion(city, district):
 
                 except:
                     continue
+
                 # Rentinfo insert into mysql
                 data_source.append(info_dict)
                 # model.Rentinfo.insert(**info_dict).upsert().execute()
 
         with model.database.atomic():
             if data_source:
-                model.Rentinfo.insert_many(data_source).upsert().execute()
+                model.Rentinfo.insert_many(data_source).execute()
         time.sleep(1)
 
 
